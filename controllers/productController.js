@@ -24,17 +24,29 @@ exports.createProduct = async (req, res) => {
 // Function to UPDATE a product
 exports.updateProduct = async (req, res) => {
     try {
-        const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
+        // 1. Find the actual document first
+        let product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return res.status(404).json({ status: "fail", message: "ID not found" });
+        }
+
+        // 2. Manually overwrite the data from the body
+        // This ensures the database can't ignore the new data
+        Object.assign(product, req.body);
+
+        // 3. Force a hard save to your local disk
+        const updatedProduct = await product.save();
+
+        res.status(200).json({
+            status: "success",
+            message: "DATABASE UPDATED",
+            data: updatedProduct
         });
-        if (!product) return res.status(404).json({ message: "Product not found" });
-        res.status(200).json({ status: "Success", data: product });
     } catch (err) {
-        res.status(400).json({ status: "Fail", message: err.message });
+        res.status(400).json({ status: "fail", message: err.message });
     }
 };
-
 // Function to DELETE a product
 exports.deleteProduct = async (req, res) => {
     try {
